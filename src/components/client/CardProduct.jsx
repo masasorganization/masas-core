@@ -4,10 +4,15 @@ import CardContent from "@mui/material/CardContent"
 import CardActions from "@mui/material/CardActions"
 import Collapse from "@mui/material/Collapse"
 import Typography from "@mui/material/Typography"
-import Grid from "@mui/material/Grid"
 import ExpandMore from "@mui/icons-material/ExpandMore"
-import Button from "@mui/material/Button"
 import Box from "@mui/material/Box"
+import { Grid, Button } from "@mui/material";
+import { useHistory } from 'react-router-dom'
+import esLocale from "date-fns/locale/es"
+import { Link } from "react-router-dom"
+import AdapterDateFns from "@mui/lab/AdapterDateFns"
+import LocalizationProvider from "@mui/lab/LocalizationProvider"
+import DatePicker from "@mui/lab/DatePicker"
 import React from "react"
 import Beetroot from "../../assets/beetroot-cake-org1.jpg"
 //import Autocomplete from '@mui/material/Autocomplete'
@@ -15,8 +20,10 @@ import TextField from "@mui/material/TextField"
 //import CloseIcon from '@mui/icons-material/Close';
 import MenuItem from "@mui/material/MenuItem"
 import Modal from '@mui/material/Modal';
-import { Input, FormControl, FormLabel, FormHelperText } from "@mui/material";
 import FormClient from "./FormClient"
+import datosPedidos from "./datosPedidos"
+import Swal from 'sweetalert2';
+import axios from 'axios';
 
 //import FormProduct from './FormProduct'
 //import datosPedidos from "./datosPedidos"
@@ -185,6 +192,9 @@ function FormProduct(props) {
     const handleOpen = () => setOpen(true)
     const handleClose = () => setOpen(false)
 
+    const [openConfirmed, setOpenConfirmed] = React.useState(false)
+    const handleOpenConfirmed = () => setOpenConfirmed(true)
+    const handleCloseConfirmed = () => setOpenConfirmed(false)
   // const enviarInformacion = () => {
 
    
@@ -306,11 +316,24 @@ function FormProduct(props) {
 
   let v = props.valor
 
+  let totalTamano = 20000
+  let totalCantidad = 1
+  let totalToppings = 500
+
+  // Calculo del precio sobre el tamaño
+  if (seleccionTamaño === "x8 porciones") {
+    totalTamano = totalTamano
+  } else if (seleccionTamaño === "x12 porciones") {
+    totalTamano = 25000
+  }
+  let totalCompra = ((totalTamano*totalCantidad)+totalToppings)
+
   // Calculo del precio sobre el tamaño
   if (seleccionTamaño === "x8 porciones") {
     v = v + 0
   } else if (seleccionTamaño === "x12 porciones") {
     v = v + 5000
+    
   }
 
   // Calculo del precio sobre las unidades
@@ -409,22 +432,81 @@ function FormProduct(props) {
   // const valorFinal = props.otroValor
 
   const [datosFormulario, setDatosFormulario] = React.useState({
+    categoria: "",
     nombrePto: props.nombrePto,
-    valor: v,
-    tamaño: "",
+    tamano: "",
+    complementos: "",
     unidades: "",
-    toppings: "",
-    nombreC: "",
-    cc: "",
+    valorFinal: totalCompra,
+    nombres: "",
+    apellidos: "",
+    tipoDeDocumento:"",
+    numeroDocumento: "",
+    direccion: "",
+    numeroCasa: "",
+    barrio: "",
+    telefono: "",
+    fechaDeEntrega: ""
+
   })
+
+  const idclient = [
+    { value: "Seleccione un Documento", laber: "NONE"},
+    { value: "Cédula de ciudadanía", label: "CC" },
+    { value: "Cédula de extranjería", label: "CE" },
+    { value: "Tarjeta de identidad", label: "TI" },
+    { value: "Nit empresarial", label: "NIT" },
+    { value: "Pasaporte", label: "P" }
+  ]
+
+  const localeMap = { es: esLocale }
+  const date = { es: "__/__/____" }
+  const [locale] = React.useState("es")
+  const [value, setValue] = React.useState(null)
+  const [id, setId] = React.useState("Seleccione un Documento")
+
+  
 
   // console.log(datosFormulario)
   const handleInputChange = (target) => {
-    setDatosFormulario({
-      ...datosFormulario,
-      [target.name]: target.value
-    })
+    setDatosFormulario({...datosFormulario, [target.name]: target.value})
   }
+
+  const handleChange = e => {
+    setDatosFormulario({...datosFormulario, [e.target.name]: e.target.value})
+  }
+
+  const handleDate = (target) => {
+    setValue({...datosFormulario, [target.name]: target.value})
+  }
+
+  const history = useHistory();
+
+  const handleSubmit = async () => {
+    // event.preventDefault();
+    const response = await axios.post('/ventas/crear', datosFormulario)
+    if (response.status === 200){
+        Swal.fire(
+            'Guardado!',
+            `El registro ha sido guardado exitosamente!`,
+            'success'
+        )
+        history.push('/deliveryconf')
+        // handleCerrar()
+        // history.push('/prueba')
+    }else{
+        Swal.fire(
+            'Error!',
+            'Hubo un problema al crear el registro!',
+            'error'
+        )
+    } 
+}
+
+  console.log(handleSubmit)
+  // const handleDate = {
+  //   setDatosFormulario
+  // }
 
   // const enviarInformacion = () => {
   //   localStorage.setItem(["Productos"], JSON.stringify(datosFormulario))
@@ -432,7 +514,7 @@ function FormProduct(props) {
 
   // let cadaPedido = [{ Productos: "Holaa?" }]
   // const arrayPrueba = []
-
+console.log(datosFormulario)
   return (
     <div onload={props.calculoValor(v)}>
       {/* <TextField
@@ -444,7 +526,9 @@ function FormProduct(props) {
       >
       </TextField> */}
 
-      <Modal open={open} close={open} sx={{bgcolor:'white'}}>
+      <Modal open={open}
+      aria-labelledby="modal-modal-title"
+      aria-describedby="modal-modal-description">
         {/* <Box sx={{display: 'flex', justifyContent: 'flex-end'}}>
            <Button onClick={handleClose}><CloseIcon></CloseIcon></Button>
         </Box> */}
@@ -476,16 +560,259 @@ function FormProduct(props) {
        
         
        </ FormClient>  */}
-       <FormControl>
-
-         <Input
-          id="nombreC"
-          label="nombre"
-          value={datosFormulario.nombreC}
-          onChange={handleInputChange}
-        ></Input>
-       </FormControl>
+       {/* <Container > */}
        
+       <Box
+       sx={{
+        bgcolor: "white",
+        justifyContent: 'center'
+      }}>
+          <Grid item xs={12} md={12}>
+            <Typography
+              sx={{
+                pt: "1.3rem",
+                ml: "1rem",
+                fontFamily: "Nunito, sans-serif",
+                fontSize: "1.2rem",
+              }}
+            >
+              <Typography sx={{ fontWeight: "700" }} h3>
+                Formulario de datos
+              </Typography>
+              <Typography sx={{ color: "#c30500" }} h4>
+                * Campo de datos obligatorio
+              </Typography>
+            </Typography>
+          </Grid>
+          <Box
+        sx={{display: "flex",
+        flexDirection: {
+          md: "row",
+          xs: "column"
+        }}}>
+          <Box sx={{
+              p: "2rem",
+              width: {
+                md: "50%",
+                xs: "78%"
+              },
+              bgcolor: "white",
+              display: "flex",
+              flexDirection: "column"
+            }}>
+            <Typography sx={{ mb: "0.5rem" }}>
+              Datos personales para generar recibo:
+            </Typography>
+            <TextField
+              name="nombres"
+              sx={{ mb: "1rem" }}
+              variant='outlined'
+              type="text"
+              label='Nombres'
+              required={true}
+              value={datosFormulario.nombres}
+              onChange={handleChange}
+            />
+            <TextField
+              name="apellidos"
+              sx={{ mb: "1rem" }}
+              variant='outlined'
+              type="text"
+              label='Apellidos'
+              required={true}
+              value={datosFormulario.apellidos}
+              onChange={handleChange}
+            />
+            <TextField
+              name="tipoDeDocumento"
+              sx={{ mb: "1rem" }}
+              select
+              variant='outlined'
+              value={datosFormulario.tipoDeDocumento}
+              onChange={handleChange}
+              label='Tipo de documento'
+              required={true}
+            >
+              {idclient.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              name="numeroDocumento"
+              variant='outlined'
+              label='Número de Documento'
+              required={true}
+              helperText='Sin puntos (.) ni guiones (-) nit completo'
+              value={datosFormulario.numeroDocumento}
+              onChange={handleChange}
+            />
+          </Box>
+          <Box
+            sx={{
+              m: "2rem",
+              width: {
+                md: "50%",
+                xs: "78%"
+              },
+              display: "flex",
+              flexDirection: "column"
+            }}
+          >
+            <Typography sx={{ mb: "0.5rem" }}>Datos de entrega:</Typography>
+            <TextField
+              name="direccion"
+              sx={{ mb: "1rem" }}
+              variant='outlined'
+              label='Dirección'
+              required={true}
+              helperText='Ej: Calle 20 sur # 2-28 o Carrera 13 este # 4-55'
+              value={datosFormulario.direccion}
+              onChange={handleChange}
+            />
+            <TextField
+              name="numeroCasa"
+              sx={{ mb: "1rem" }}
+              variant='outlined'
+              label='Número casa, apto, oficina'
+              helperText='Ej: Torre 1 bloque b ap 202'
+              value={datosFormulario.numeroCasa}
+              onChange={handleChange}
+            />
+            <TextField
+              name="barrio"
+              sx={{ mb: "1rem" }}
+              variant='outlined'
+              label='Barrio'
+              required={true}
+              value={datosFormulario.barrio}
+              onChange={handleChange}
+            />
+            <TextField
+              name="telefono"
+              sx={{ mb: "1rem" }}
+              variant='outlined'
+              label='Celular'
+              required={true}
+              value={datosFormulario.telefono}
+              onChange={handleChange}
+            />
+            <TextField
+              name="fechaDeEntrega"
+              sx={{ mb: "1rem" }}
+              variant='outlined'
+              label='Fecha De Entrega'
+              required={true}
+              value={datosFormulario.fechaDeEntrega}
+              onChange={handleChange}
+            />
+            {/* <LocalizationProvider
+              dateAdapter={AdapterDateFns}
+              locale={localeMap[locale]}
+            >
+              <DatePicker
+                name="fechaDeEntrega"
+                mask={date[locale]}
+                label='Fecha de entrega'
+                value={datosFormulario.fechaDeEntrega}
+                onChange={(newValue) => setValue(newValue)}
+                // onload={handleDate}
+                renderInput={(params) => (
+                  <TextField {...params} required={true} />
+                )}
+              />
+            </LocalizationProvider> */}
+          </Box>
+        </Box>
+        <Button sx={{...StyleButtonCancelar}} onClick={() => handleClose()}>Cancelar</Button>
+        <Button sx={{...StyleButtonOk}} onClick={() => handleSubmit()}>continuar</Button>
+        <Modal open={openConfirmed}>
+          <Box
+            sx={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: {
+                md: "40%",
+                xs: "70%"
+              },
+              bgcolor: "#ffffff",
+              border: "2px solid #000",
+              p: "2rem"
+            }}
+          >
+            <Typography
+              sx={{ fontWeight: "700", textAlign: "center" }}
+              id='title-modal'
+            >
+              Enviar la solicitud contra-entrega
+            </Typography>
+            <Typography
+              sx={{ mt: "0.5rem", textAlign: "center", mb: "2rem" }}
+              id='description-modal'
+            >
+              ¿Verificaste muy bien todos tus datos para la entrega del producto?
+            </Typography>
+            <Box sx={{ display: "flex", flexDirection: "column" }}>
+              <div className='btn-client'>
+                  <Button
+                    onClick={handleSubmit}
+                    sx={{
+                      bgcolor: "#ff4e00",
+                      color: "#ffffff",
+                      borderRadius: "10px",
+                      boxShadow: "0",
+                      mt: "1rem",
+                      mr: {
+                        md: "2rem",
+                        xs: "0"
+                      },
+                      textTransform: "none",
+                      width: "15rem",
+                      fontFamily: "Noto Sans, sans-serif",
+                      fontSize: {
+                        md: "1.1rem",
+                        xs: "1rem"
+                      },
+                      fontWeight: "700",
+                      ":hover": {
+                        bgcolor: "#9bd816"
+                      }
+                    }}
+                  >
+                    Ok, enviar solicitud
+                  </Button>
+                <Button
+                  onClick={() => handleCloseConfirmed()}
+                  sx={{
+                    bgcolor: "#c30500",
+                    color: "#ffffff",
+                    borderRadius: "10px",
+                    boxShadow: "0",
+                    mt: "1rem",
+                    textTransform: "none",
+                    width: "15rem",
+                    fontFamily: "Noto Sans, sans-serif",
+                    fontSize: {
+                      md: "1.1rem",
+                      xs: "1rem"
+                    },
+                    fontWeight: "700",
+                    ":hover": {
+                      bgcolor: "#9bd816"
+                    }
+                  }}
+                >
+                  No, quiero revisar
+                </Button>
+              </div>
+            </Box>
+          </Box>
+        </Modal>
+      </Box>
+      
       </Modal>
 
       <TextField
@@ -495,7 +822,7 @@ function FormProduct(props) {
         label='Tamaño'
         value={seleccionTamaño}
         onChange={cambioTamaño}
-        name='tamaño'
+        name='tamano'
         sx={{ width: "100%" }}
       >
         {seleccionarSize.map((option) => (
@@ -521,7 +848,6 @@ function FormProduct(props) {
           </MenuItem>
         ))}
       </TextField>
-
       <TextField
         id='toppings-product'
         select
@@ -529,7 +855,7 @@ function FormProduct(props) {
         label='Toppings'
         value={seleccionToppings}
         onChange={cambioToppings}
-        name='toppings'
+        name='complementos'
         sx={{ width: "100%", mt: "0.6rem" }}
       >
         {seleccionarToppings.map((option) => (
@@ -578,3 +904,42 @@ function FormProduct(props) {
 }
 
 export default CardProduct
+
+
+const StyleButtonOk = {
+    bgcolor: "#ff4e00",
+    color: "#ffffff",
+    textTransform: "none",
+    borderRadius: "10px",
+    boxShadow: "0",
+    mt: "1rem",
+    width: "18rem",
+    fontFamily: "Noto Sans, sans-serif",
+    fontSize: {
+      md: "1.1rem",
+      xs: "1rem"
+    },
+    fontWeight: "700",
+    ":hover": {
+      bgcolor: "#b70030"
+    }
+};
+
+const StyleButtonCancelar = {
+  bgcolor: "#c30500",
+  color: "#ffffff",
+  borderRadius: "10px",
+  boxShadow: "0",
+  mt: "1rem",
+  textTransform: "none",
+  width: "18rem",
+  fontFamily: "Noto Sans, sans-serif",
+  fontSize: {
+    md: "1.1rem",
+    xs: "1rem",
+  },
+  fontWeight: "700",
+    ":hover": {
+  bgcolor: "#ff823b",
+  },
+}

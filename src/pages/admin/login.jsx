@@ -8,6 +8,8 @@ import TextField from '@mui/material/TextField'
 import { styled } from '@mui/material/styles'
 import Grid from '@mui/material/Grid'
 import { Link } from 'react-router-dom'
+import Swal from 'sweetalert2';
+import Axios from 'axios';
 import { useState, useEffect } from 'react'
 
 // Contenedores de Texto
@@ -24,6 +26,59 @@ function Login() {
   useEffect(() => {
     document.title = 'má sas | Iniciar sesión'
   })
+
+  const [usuario,setUsuario]=useState('')
+  const [contrasena,setContrasena]=useState('')
+
+  const login=async(e)=>{
+    e.preventDefault();
+    const datos={usuario,contrasena}
+    const respuesta= await Axios.post('https://masasapp.herokuapp.com/usuarios/login',datos);
+    console.log(respuesta);
+    const mensaje=respuesta.data.mensaje
+
+    if(mensaje!=='Bienvenido!')
+    {
+        Swal.fire({
+          
+        icon: 'error',
+        title: mensaje,
+        showConfirmButton: false,
+        timer: 1500
+          });
+    }
+
+    else{
+
+        const token= respuesta.data.token
+        const nombre= respuesta.data.nombre
+        const idusuario=respuesta.data.id
+        sessionStorage.setItem('token',token)
+        sessionStorage.setItem('nombre',nombre)
+        sessionStorage.setItem('idusuario',idusuario)
+        
+        Swal.fire({
+          
+            icon: 'success',
+            title: mensaje,
+            showConfirmButton: false,
+            timer: 1500
+              });
+
+        setTimeout(()=>{ window.location.href='/welcome'},500)
+
+    }
+  }
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    // eslint-disable-next-line no-console
+    console.log({
+      user: data.get('user'),
+      password: data.get('password'),
+    });
+  };
 
   return (
     <div>
@@ -75,11 +130,12 @@ function Login() {
               <Resaltado sx={{ ...resaltado }}>{texto2}</Resaltado>
             </Box>
             {/* Campos de Texto */}
+            <Box component="form" onSubmit={handleSubmit,login} noValidate  >
             <Grid container>
               <Grid item xs={12} sx={{ mb: '20px' }}>
                 <TextField
                   required
-                  onChange={(text) => setBotonActivo(!text.target.value)}
+                  onChange={(e)=>setUsuario(e.target.value)}
                   id='username'
                   //helperText="Ingrese su nombre de usuario"
                   label='Nombre de usuario'
@@ -91,7 +147,7 @@ function Login() {
                 <TextField
                   //helperText="Ingrese su contraseña"
                   required
-                  onChange={(text) => setBotonActivo(!text.target.value)}
+                  onChange={(e)=>setContrasena(e.target.value)}
                   id='password'
                   label='Contraseña'
                   variant='standard'
@@ -107,13 +163,15 @@ function Login() {
               }}
             >
               <Button
+                type= 'submit'
                 variant='contained'
                 color='primary'
                 sx={{ ...botonLogin }}
-                disabled={botonActivo}
+                // disabled={botonActivo}
               >
                 Inicio
               </Button>
+            </Box>
             </Box>
           </Container>
         </Box>
